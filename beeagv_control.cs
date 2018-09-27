@@ -17,7 +17,6 @@ namespace lscm.project.followerv2
         private MotionController motorController = null;
         private Urg04LX lidar = null;
 
-
         private EFollowerMode mode;
 
         #region Thread-saft for the UWB two distance values
