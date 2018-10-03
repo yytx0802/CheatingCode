@@ -88,7 +88,7 @@ namespace lscm.project.followerv2
         #endregion
 
         private bool _startFlag = false;
-        //private bool _startFlag = true;           
+        //private bool _startFlag = true;
         private void FollowerWorkHandler()
         {
             Console.WriteLine("enter follower handler");
@@ -99,23 +99,23 @@ namespace lscm.project.followerv2
             //step 3 make sure avoid the obstacle safely ?
 
             //threshold configs
-            int car_width = 450;               // the distance between D1 and D2, to be checked 
-            int uwb_detect_thresh = 1200;       //uwb starting to detect threshold (mm)   
+            int car_width = 450;               // the distance between D1 and D2, to be checked
+            int uwb_detect_thresh = 1200;       //uwb starting to detect threshold (mm)
             int turn_thresh = 75;              //threshold for deciding uwb turning
             int safe_distance = 800;        //safe_distance from obstacle to lidar. Note that the lidar is 500mm from car edge
             int release_distance = 650;
             int emergency_distance = 700;
             int Ddistance = 0;
-            int D_offset = 100;              //offset that decrease the error  measure may 10cm smaller than real 
+            int D_offset = 100;              //offset that decrease the error  measure may 10cm smaller than real
 
             //speed configs
             int basic_speed = 40;
             double speed_param = 1;
             double obs_paramL = 1, obs_paramR = 1;     //for recording avoid obstacle params
-            double turn_paramL = 1, turn_paramR = 1;    //for 
+            double turn_paramL = 1, turn_paramR = 1;    //for
 
             //angle configs
-            int scan_angleL = 145;      //scan angle when following 
+            int scan_angleL = 145;      //scan angle when following
             int scan_angleR = 215;
             int scan_spe_angleL = 100;   //scan angle when large angle turning following
             int scan_spe_angleR = 260;
@@ -125,7 +125,7 @@ namespace lscm.project.followerv2
             //other variables and flags
             int obstacle_angleL = 0, obstacle_angleR = 0;         //record the first obstacle angle and last obstacle angle
             bool obstacle_flag = false;
-            int follow_num = 0;       //a number which represent the following status    -2 -1 0 1 2 
+            int follow_num = 0;       //a number which represent the following status    -2 -1 0 1 2
 
             //kalman filter params
             double kal_R = 0.000004d;
@@ -141,7 +141,7 @@ namespace lscm.project.followerv2
             //------------------------------start looping------------------------//
             while (_startFlag)
             {
-                
+
                 #region step 1 execute following once
                 Ddistance = (int)Math.Sqrt((double)(0.5 * (this.LastD0 * this.LastD0 +
                     this.LastD1 * this.LastD1 - 0.5 * car_width * car_width))) + D_offset;                //calculate the distance between the object and the middle of the uwb
@@ -207,7 +207,7 @@ namespace lscm.project.followerv2
                     //reset the parameters
                     obstacle_angleL = 0;
                     obstacle_angleR = 0;
-                    if (follow_num == -2 || follow_num == 2)        //when large angle following, increase scan range 
+                    if (follow_num == -2 || follow_num == 2)        //when large angle following, increase scan range
                     {
                         scan_angleL = scan_spe_angleL;
                         scan_angleR = scan_spe_angleR;
@@ -224,7 +224,7 @@ namespace lscm.project.followerv2
                             obstacle_angleL = i;                //get the obstacle left edge
                             break;
                         }
-                        //if no break ,means no obstacles         
+                        //if no break ,means no obstacles
                     }
                     //if obstacle detected, and left side of obstacle found, find the right side
                     if (obstacle_flag)
@@ -245,7 +245,7 @@ namespace lscm.project.followerv2
                 }
                 #endregion
 
-                # region step 3 when avoid mode, it will stay in this loop 
+                # region step 3 when avoid mode, it will stay in this loop
                 int escape_counter = 0;
                 while (obstacle_flag)           //follow flag is JUST FOR EMERGENCY STOP
                 {
@@ -265,7 +265,7 @@ namespace lscm.project.followerv2
                     ///////////////////////////security ending////////////////////////
                     if ((obstacle_angleR > obstacle_angleL) && obstacle_angleL > 180)             //obstacle on the right, the angle may change from time to time
                     {
-                        obs_paramL = 0.9;                  
+                        obs_paramL = 0.9;
                         obs_paramR = 1.3;
                         Console.Write(" turn left ");
                     }
@@ -277,10 +277,10 @@ namespace lscm.project.followerv2
                     }
 
                     ////////////////////////add a emergency button
-                    for (int i = 160; i < 200; i++) 
+                    for (int i = 160; i < 200; i++)
                     {
                         if (this.lidar.DataArray[i] * this.lidar.DataArray[i + 1] > 0         //clear invalid points
-                            && this.lidar.DataArray[i] < safe_distance && this.lidar.DataArray[i + 1] < emergency_distance)    
+                            && (this.lidar.DataArray[i] < emergency_distance || this.lidar.DataArray[i + 1] < emergency_distance))
                         {
                             obs_paramL = 0;
                             obs_paramR = 0;
@@ -303,7 +303,7 @@ namespace lscm.project.followerv2
                             //{
                             //    obs_paramL = 0.6;
                             //    obs_paramR = 0.6;
-                            //    break;  //slow the turning speed  
+                            //    break;  //slow the turning speed
                             //}
                         }
                         else if (i >= 150 && i < 180 && this.lidar.DataArray[i] > 0 && this.lidar.DataArray[i] < 1.1 * safe_distance)
@@ -326,7 +326,7 @@ namespace lscm.project.followerv2
                         {
                             escape_counter += 1;
                             if (escape_counter >= 5)
-                            {             
+                            {
                                 Console.WriteLine("obstacle cleared");
                                 obs_paramL = 1;                  //reset params and jump out of the loop
                                 obs_paramR = 1;
