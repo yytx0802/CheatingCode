@@ -90,30 +90,7 @@ namespace lscm.project.followerv2
 
         private bool _startFlag = false;
         //private bool _startFlag = true;    
-        private void setspeed(double set_VL, double set_VR, double last_VL, double last_VR) {
-            //control the left wheel speed and right speed seperatedly
-            if ((set_VL - last_VL) >= 0)
-            {
-                if ((last_VL += 10) > set_VL) last_VL = set_VL;
-            }
-            else if ((set_VL - last_VL) < 0)
-            {
-                if ((last_VL -= 10) < set_VL) last_VL = set_VL;
-            }
-
-            if ((set_VR - last_VR) >= 0)
-            {
-                if ((last_VL += 10) > set_VR) last_VL = set_VR;
-            }
-            else if ((set_VR - last_VR) < 0)
-            {
-                if ((last_VR -= 10) < set_VR) last_VR = set_VR;
-            }
-
-            string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
-            this.motorController.SendMessage(cmd);
-            Thread.Sleep(20);
-        }  
+        
         private void FollowerWorkHandler()
         {
             Console.WriteLine("enter follower handler");
@@ -134,7 +111,7 @@ namespace lscm.project.followerv2
             int D_offset = 50;              //offset that decrease the error  measure may 10cm smaller than real 
 
             //speed configs
-            int basic_speed = 50;
+            double basic_speed = 50;
             double speed_param = 1.2;
             double obs_paramL = 1, obs_paramR = 1;     //for recording avoid obstacle params
             double turn_paramL = 1, turn_paramR = 1;    //for 
@@ -168,7 +145,7 @@ namespace lscm.project.followerv2
             //------------------------------start looping------------------------//
             while (_startFlag)
             {
-                
+
                 #region step 1 execute following once
                 Ddistance = (int)Math.Sqrt((double)(0.5 * (this.LastD0 * this.LastD0 +
                     this.LastD1 * this.LastD1 - 0.5 * car_width * car_width))) + D_offset;                //calculate the distance between the object and the middle of the uwb
@@ -198,7 +175,7 @@ namespace lscm.project.followerv2
                     {
                         turn_paramL = 1.2;
                         turn_paramR = 0.8;
-                        if(Ddistance > 2000)
+                        if (Ddistance > 2000)
                         {
                             turn_paramL = 1.1;
                             turn_paramR = 0.9;
@@ -228,10 +205,12 @@ namespace lscm.project.followerv2
                             follow_num = -2;
                         }
                     }
-                    last_VL = (double)basic_speed * speed_param * turn_paramL + ((double)basic_speed * speed_param * turn_paramL - last_VL) / 2;
+                    last_VL = basic_speed * speed_param * turn_paramL + (basic_speed * speed_param * turn_paramL - last_VL) / 2;
                     last_VR = basic_speed * speed_param * turn_paramR + (basic_speed * speed_param * turn_paramR - last_VR) / 2;
-                    string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
-                    this.motorController.SendMessage(cmd);
+
+                    setspeed(basic_speed * speed_param * turn_paramL, basic_speed * speed_param * turn_paramR, ref last_VL, ref last_VR);
+                    //string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
+                    //this.motorController.SendMessage(cmd);
                     speed_param = 1;        //reset params
                     turn_paramL = 1;
                     turn_paramR = 1;
@@ -248,7 +227,7 @@ namespace lscm.project.followerv2
                     obstacle_angleR = 0;
                     //if (follow_num == -2 || follow_num == 2)        //when large angle following, increase scan range 
                     if (follow_num != 0)        //when large angle following, increase scan range 
-                        {
+                    {
                         scan_angleL = scan_spe_angleL;
                         scan_angleR = scan_spe_angleR;
                     }
@@ -257,8 +236,8 @@ namespace lscm.project.followerv2
                     {
                         if (i < 155 || i > 205) safe_distance = 650;
                         else safe_distance = 700;
-                        if (this.lidar.DataArray[i] * this.lidar.DataArray[i + 1]  > 0         //clear invalid points
-                            && this.lidar.DataArray[i] < safe_distance )
+                        if (this.lidar.DataArray[i] * this.lidar.DataArray[i + 1] > 0         //clear invalid points
+                            && this.lidar.DataArray[i] < safe_distance)
                         {
                             obstacle_flag = true;
                             obstacle_angleL = i;                //get the obstacle left edge
@@ -307,7 +286,7 @@ namespace lscm.project.followerv2
                     ///////////////////////////security ending////////////////////////
                     if ((obstacle_angleR > obstacle_angleL) && obstacle_angleL > 180)             //obstacle on the right, the angle may change from time to time
                     {
-                        obs_paramL = 0.09d;                  
+                        obs_paramL = 0.09d;
                         obs_paramR = 0.12d;
                         Console.Write(" turn left ");
                     }
@@ -316,24 +295,26 @@ namespace lscm.project.followerv2
                         obs_paramL = 0.12d;
                         obs_paramR = 0.09d;
                         Console.Write(" turn right ");
-                    } 
+                    }
 
                     ////////////////////////add a emergency button//////////////////////////////////////
-                    for (int i = 160; i < 200; i++) 
+                    for (int i = 160; i < 200; i++)
                     {
                         if (this.lidar.DataArray[i] * this.lidar.DataArray[i + 1] > 0         //clear invalid points
-                            && (this.lidar.DataArray[i] < emergency_distance || this.lidar.DataArray[i + 1] < emergency_distance))    
+                            && (this.lidar.DataArray[i] < emergency_distance || this.lidar.DataArray[i + 1] < emergency_distance))
                         {
                             obs_paramL = 0;
                             obs_paramR = 0;
                             Console.WriteLine("emergency stop in obs, front obstacle");
+                            setspeed(0, 0, ref last_VL, ref last_VR);
                             //Thread.Sleep(100);  
                             break;
                         }
                     }
 
-                    string obs_cmd = string.Format("z {0:0} {1:0}\r\n", basic_speed * obs_paramL, basic_speed * obs_paramR);
-                    this.motorController.SendMessage(obs_cmd);
+                    setspeed(basic_speed * obs_paramL, basic_speed * obs_paramR, ref last_VL, ref last_VR);
+                    //string obs_cmd = string.Format("z {0:0} {1:0}\r\n", basic_speed * obs_paramL, basic_speed * obs_paramR);
+                    //this.motorController.SendMessage(obs_cmd);
 
                     for (int i = release_angleL; i <= release_angleR; i++)          //   \90   270/  detect clockwise.         //try to decrease a little?
                     {
@@ -341,12 +322,6 @@ namespace lscm.project.followerv2
                         {
                             Console.Write("zoneAAAA");
                             if (obstacle_angleL > 0 && obstacle_angleL < 180) break;//means turn right
-                            //else if (obstacle_angleL >= 180)
-                            //{
-                            //    obs_paramL = 0.6;
-                            //    obs_paramR = 0.6;
-                            //    break;  //slow the turning speed  
-                            //}
                         }
                         else if (i >= 150 && i < 180 && this.lidar.DataArray[i] > 0 && this.lidar.DataArray[i] < 1.1 * safe_distance)
                         {
@@ -368,7 +343,7 @@ namespace lscm.project.followerv2
                         {
                             escape_counter += 1;
                             if (escape_counter >= 5)
-                            {             
+                            {
                                 Console.WriteLine("obstacle cleared");
                                 obs_paramL = 1;                  //reset params and jump out of the loop
                                 obs_paramR = 1;
@@ -383,6 +358,31 @@ namespace lscm.project.followerv2
                 #endregion
                 Thread.Sleep(50);
             }
+        }
+        private void setspeed(double set_VL, double set_VR, ref double last_VL, ref double last_VR)
+        {
+            //control the left wheel speed and right speed seperatedly
+            if ((set_VL - last_VL) >= 0)
+            {
+                if ((last_VL += 10) > set_VL) last_VL = set_VL;
+            }
+            else if ((set_VL - last_VL) < 0)
+            {
+                if ((last_VL -= 10) < set_VL) last_VL = set_VL;
+            }
+
+            if ((set_VR - last_VR) >= 0)
+            {
+                if ((last_VL += 10) > set_VR) last_VL = set_VR;
+            }
+            else if ((set_VR - last_VR) < 0)
+            {
+                if ((last_VR -= 10) < set_VR) last_VR = set_VR;
+            }
+
+            string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
+            this.motorController.SendMessage(cmd);
+            Thread.Sleep(20);
         }
         //note: turning(1.2 0.8)  following(1.4 0.8)
         public FollowerV2()
