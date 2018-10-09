@@ -89,7 +89,31 @@ namespace lscm.project.followerv2
         #endregion
 
         private bool _startFlag = false;
-        //private bool _startFlag = true;           
+        //private bool _startFlag = true;    
+        private void setspeed(double set_VL, double set_VR, double last_VL, double last_VR) {
+            //control the left wheel speed and right speed seperatedly
+            if ((set_VL - last_VL) >= 0)
+            {
+                if ((last_VL += 10) > set_VL) last_VL = set_VL;
+            }
+            else if ((set_VL - last_VL) < 0)
+            {
+                if ((last_VL -= 10) < set_VL) last_VL = set_VL;
+            }
+
+            if ((set_VR - last_VR) >= 0)
+            {
+                if ((last_VL += 10) > set_VR) last_VL = set_VR;
+            }
+            else if ((set_VR - last_VR) < 0)
+            {
+                if ((last_VR -= 10) < set_VR) last_VR = set_VR;
+            }
+
+            string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
+            this.motorController.SendMessage(cmd);
+            Thread.Sleep(20);
+        }  
         private void FollowerWorkHandler()
         {
             Console.WriteLine("enter follower handler");
