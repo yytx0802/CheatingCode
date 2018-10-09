@@ -90,7 +90,7 @@ namespace lscm.project.followerv2
 
         private bool _startFlag = false;
         //private bool _startFlag = true;    
-        
+
         private void FollowerWorkHandler()
         {
             Console.WriteLine("enter follower handler");
@@ -154,7 +154,8 @@ namespace lscm.project.followerv2
                     Ddistance = (int)Math.Sqrt((double)(0.5 * (this.LastD0 * this.LastD0 +
                                 this.LastD1 * this.LastD1 - 0.5 * car_width * car_width))) + D_offset;
                     //follower_flag = false;
-                    this.motorController.SendMessage("z 0 0\r\n");
+                    //this.motorController.SendMessage("z 0 0\r\n");
+                    setspeed(0, 0, ref last_VL, ref last_VR);
                     //Console.Write(Ddistance);
                     Console.WriteLine("Ddistance stop in following");
                     Thread.Sleep(200);
@@ -205,8 +206,6 @@ namespace lscm.project.followerv2
                             follow_num = -2;
                         }
                     }
-                    last_VL = basic_speed * speed_param * turn_paramL + (basic_speed * speed_param * turn_paramL - last_VL) / 2;
-                    last_VR = basic_speed * speed_param * turn_paramR + (basic_speed * speed_param * turn_paramR - last_VR) / 2;
 
                     setspeed(basic_speed * speed_param * turn_paramL, basic_speed * speed_param * turn_paramR, ref last_VL, ref last_VR);
                     //string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
@@ -279,7 +278,8 @@ namespace lscm.project.followerv2
                         Ddistance = (int)Math.Sqrt((double)(0.5 * (this.LastD0 * this.LastD0 +
                                     this.LastD1 * this.LastD1 - 0.5 * car_width * car_width))) + D_offset;
                         //follower_flag = false;
-                        this.motorController.SendMessage("z 0 0\r\n");
+                        setspeed(0, 0, ref last_VL, ref last_VR);
+                        //this.motorController.SendMessage("z 0 0\r\n");
                         Console.WriteLine("Ddistance stop in obs");
                         Thread.Sleep(50);
                     }
@@ -364,25 +364,29 @@ namespace lscm.project.followerv2
             //control the left wheel speed and right speed seperatedly
             if ((set_VL - last_VL) >= 0)
             {
-                if ((last_VL += 10) > set_VL) last_VL = set_VL;
+                if ((last_VL += 8) > set_VL) last_VL = set_VL;
             }
             else if ((set_VL - last_VL) < 0)
             {
-                if ((last_VL -= 10) < set_VL) last_VL = set_VL;
+                if ((last_VL -= 8) < set_VL) last_VL = set_VL;
             }
 
             if ((set_VR - last_VR) >= 0)
             {
-                if ((last_VL += 10) > set_VR) last_VL = set_VR;
+                if ((last_VR += 8) > set_VR) last_VR = set_VR;
             }
             else if ((set_VR - last_VR) < 0)
             {
-                if ((last_VR -= 10) < set_VR) last_VR = set_VR;
+                if ((last_VR -= 8) < set_VR) last_VR = set_VR;
             }
 
             string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
             this.motorController.SendMessage(cmd);
-            Thread.Sleep(20);
+            //Console.Write("set speedL is ");
+            //Console.WriteLine(set_VL);
+            //Console.Write("last speedL is ");
+            //Console.WriteLine(last_VL);
+            Thread.Sleep(30);
         }
         //note: turning(1.2 0.8)  following(1.4 0.8)
         public FollowerV2()
