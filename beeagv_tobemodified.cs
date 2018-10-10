@@ -213,7 +213,7 @@ namespace lscm.project.followerv2
                     speed_param = 1;        //reset params
                     turn_paramL = 1;
                     turn_paramR = 1;
-                    Thread.Sleep(20);
+                    //Thread.Sleep(20);
                 }
                 #endregion
 
@@ -261,7 +261,7 @@ namespace lscm.project.followerv2
                     safe_distance = 700; // resest parameter
                     scan_angleL = 145;
                     scan_angleR = 215;
-                    Thread.Sleep(20);
+                    //Thread.Sleep(20);
                 }
                 #endregion
 
@@ -281,7 +281,7 @@ namespace lscm.project.followerv2
                         setspeed(0, 0, ref last_VL, ref last_VR);
                         //this.motorController.SendMessage("z 0 0\r\n");
                         Console.WriteLine("Ddistance stop in obs");
-                        Thread.Sleep(50);
+                        Thread.Sleep(100);
                     }
                     ///////////////////////////security ending////////////////////////
                     if ((obstacle_angleR > obstacle_angleL) && obstacle_angleL > 180)             //obstacle on the right, the angle may change from time to time
@@ -353,7 +353,7 @@ namespace lscm.project.followerv2
                             }
                         }
                     }
-                    Thread.Sleep(50);
+                    //Thread.Sleep(50);
                 }
                 #endregion
                 Thread.Sleep(50);
@@ -362,22 +362,27 @@ namespace lscm.project.followerv2
         private void setspeed(double set_VL, double set_VR, ref double last_VL, ref double last_VR)
         {
             //control the left wheel speed and right speed seperatedly
+            double step_size = 4d;
+            //set acc depending on different velocities
+            if (last_VL >= 50) step_size = 6d;
+            //else if (last_VL >= 20) step_size = 4;
+
             if ((set_VL - last_VL) >= 0)
             {
-                if ((last_VL += 8) > set_VL) last_VL = set_VL;
+                if ((last_VL += step_size) > set_VL) last_VL = set_VL;
             }
             else if ((set_VL - last_VL) < 0)
             {
-                if ((last_VL -= 8) < set_VL) last_VL = set_VL;
+                if ((last_VL -= step_size) < set_VL) last_VL = set_VL;
             }
 
             if ((set_VR - last_VR) >= 0)
             {
-                if ((last_VR += 8) > set_VR) last_VR = set_VR;
+                if ((last_VR += step_size) > set_VR) last_VR = set_VR;
             }
             else if ((set_VR - last_VR) < 0)
             {
-                if ((last_VR -= 8) < set_VR) last_VR = set_VR;
+                if ((last_VR -= step_size) < set_VR) last_VR = set_VR;
             }
 
             string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
@@ -386,7 +391,7 @@ namespace lscm.project.followerv2
             //Console.WriteLine(set_VL);
             //Console.Write("last speedL is ");
             //Console.WriteLine(last_VL);
-            Thread.Sleep(30);
+            Thread.Sleep(50);
         }
         //note: turning(1.2 0.8)  following(1.4 0.8)
         public FollowerV2()
