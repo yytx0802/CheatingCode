@@ -362,9 +362,9 @@ namespace lscm.project.followerv2
         private void setspeed(double set_VL, double set_VR, ref double last_VL, ref double last_VR)
         {
             //control the left wheel speed and right speed seperatedly
-            double step_size = 4d;
+            double step_size = 3d;
             //set acc depending on different velocities
-            if (last_VL >= 50) step_size = 6d;
+            if (last_VL >= 20) step_size = 6d;
             //else if (last_VL >= 20) step_size = 4;
 
             if ((set_VL - last_VL) >= 0)
@@ -391,7 +391,7 @@ namespace lscm.project.followerv2
             //Console.WriteLine(set_VL);
             //Console.Write("last speedL is ");
             //Console.WriteLine(last_VL);
-            Thread.Sleep(50);
+            Thread.Sleep(75);
         }
         //note: turning(1.2 0.8)  following(1.4 0.8)
         public FollowerV2()
