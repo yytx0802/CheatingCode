@@ -269,12 +269,10 @@ namespace lscm.project.followerv2
                 {
                     //Console.WriteLine("avoiding");
                     //////////////////////security adding////////////////////////////
-                    Ddistance = (int)Math.Sqrt((double)(0.5 * (this.LastD0 * this.LastD0 +
-                             this.LastD1 * this.LastD1 - 0.5 * car_width * car_width))) + D_offset;
+                    Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);
                     while (Ddistance < uwb_detect_thresh)
                     {
-                        Ddistance = (int)Math.Sqrt((double)(0.5 * (this.LastD0 * this.LastD0 +
-                                    this.LastD1 * this.LastD1 - 0.5 * car_width * car_width))) + D_offset;
+                        Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);
                         //follower_flag = false;
                         setspeed(0, 0, ref last_VL, ref last_VR);
                         //this.motorController.SendMessage("z 0 0\r\n");
