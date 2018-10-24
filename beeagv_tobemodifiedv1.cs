@@ -180,7 +180,7 @@ namespace lscm.project.followerv2
                             turn_paramR = 0.9;
                         }
                         follow_num = 1;
-                        if ((kal_D0 - kal_D1) >= 2.3 * turn_thresh)
+                        if ((kal_D0 - kal_D1) >= 3 * turn_thresh)
                         {
                             turn_paramL = 1.5;
                             turn_paramR = 0.6;
@@ -197,7 +197,7 @@ namespace lscm.project.followerv2
                             turn_paramL = 0.9;
                             turn_paramR = 1.1;
                         }
-                        if ((kal_D0 - kal_D1) <= turn_thresh * (-2.3))
+                        if ((kal_D0 - kal_D1) <= turn_thresh * (-3))
                         {
                             turn_paramL = 0.6;          //param needs tuning
                             turn_paramR = 1.5;
@@ -401,12 +401,12 @@ namespace lscm.project.followerv2
             if (set_VL > last_VL)
             {
                 last_VL *= step_size;
-                if (last_VL >= set_VL) last_VL = set_VL;        
+                if (last_VL >= set_VL) last_VL = set_VL;
             }
-            else if(set_VL < last_VL)
+            else if (set_VL < last_VL)
             {
                 last_VL /= step_size;
-                if (last_VL <= set_VL) last_VL = set_VL;    
+                if (last_VL <= set_VL) last_VL = set_VL;
             }
 
             // set right wheel speed
@@ -421,7 +421,8 @@ namespace lscm.project.followerv2
                 if (last_VR <= set_VR) last_VR = set_VR;
             }
             //set stop threshold
-            if (set_VL * set_VR == 0) {
+            if (set_VL * set_VR == 0)
+            {
                 if (last_VL <= 3) last_VL = 0;
                 if (last_VR <= 3) last_VR = 0;
             }
