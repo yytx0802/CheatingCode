@@ -138,7 +138,7 @@ namespace lscm.project.followerv2
             //int pre_D0 = this.LastD0, now_D0 = 0, pre_D1 = this.LastD1, now_D1 = 0;
             //int D_diff = 0;
 
-            double last_VL = basic_speed, last_VR = basic_speed;
+            double last_VL = 0, last_VR = 0;
             //stop the car first
             this.motorController.SendMessage("z 0 0\r\n");
             while (this.lidar.DataArray[0] != -1) ;     //make sure to get the lidar data
@@ -153,7 +153,7 @@ namespace lscm.project.followerv2
                     Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);
                     //follower_flag = false;
                     //this.motorController.SendMessage("z 0 0\r\n");
-                    setspeed(0, 0, ref last_VL, ref last_VR);
+                    setspeedV2(0, 0, ref last_VL, ref last_VR);
                     //Console.Write(Ddistance);
                     Console.WriteLine("Ddistance stop in following");
                     Thread.Sleep(500);
@@ -302,13 +302,13 @@ namespace lscm.project.followerv2
                             obs_paramL = 0;
                             obs_paramR = 0;
                             Console.WriteLine("emergency stop in obs, front obstacle");
-                            setspeed(0, 0, ref last_VL, ref last_VR);
+                            setspeedV2(0, 0, ref last_VL, ref last_VR);
                             //Thread.Sleep(100);  
                             break;
                         }
                     }
 
-                    setspeed(basic_speed * obs_paramL, basic_speed * obs_paramR, ref last_VL, ref last_VR);
+                    setspeedV2(basic_speed * obs_paramL, basic_speed * obs_paramR, ref last_VL, ref last_VR);
                     //string obs_cmd = string.Format("z {0:0} {1:0}\r\n", basic_speed * obs_paramL, basic_speed * obs_paramR);
                     //this.motorController.SendMessage(obs_cmd);
 
@@ -394,6 +394,43 @@ namespace lscm.project.followerv2
             //Console.WriteLine(last_VL);
             Thread.Sleep(50);
         }
+
+        private void setspeedV2(double set_VL, double set_VR, ref double last_VL, ref double last_VR, double step_size = 1.6)
+        {
+            // set left wheel speed
+            if (set_VL > last_VL)
+            {
+                last_VL *= step_size;
+                if (last_VL >= set_VL) last_VL = set_VL;        
+            }
+            else if(set_VL < last_VL)
+            {
+                last_VL /= step_size;
+                if (last_VL <= set_VL) last_VL = set_VL;    
+            }
+
+            // set right wheel speed
+            if (set_VR > last_VR)
+            {
+                last_VR *= step_size;
+                if (last_VR >= set_VR) last_VR = set_VR;
+            }
+            else if (set_VR < last_VR)
+            {
+                last_VR /= step_size;
+                if (last_VR <= set_VR) last_VR = set_VR;
+            }
+            //set stop threshold
+            if (set_VL * set_VR == 0) {
+                if (last_VL <= 3) last_VL = 0;
+                if (last_VR <= 3) last_VR = 0;
+            }
+
+            string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
+            this.motorController.SendMessage(cmd);
+            Thread.Sleep(80);
+        }
+
         //note: turning(1.2 0.8)  following(1.4 0.8)
         public FollowerV2()
         {
