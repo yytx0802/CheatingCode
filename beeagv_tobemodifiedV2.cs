@@ -108,7 +108,7 @@ namespace lscm.project.followerv2
         //#endregion
 
         private bool _startFlag = false;
-   
+
 
         private void FollowerWorkHandler()
         {
@@ -120,11 +120,11 @@ namespace lscm.project.followerv2
             //step 3 make sure avoid the obstacle safely ?
 
 
-            
+
             //threshold configs
             int car_width = 450;               // the distance between D1 and D2, to be checked 
-            int uwb_detect_thresh = 1050;       //uwb starting to detect threshold (mm)   
-            double turn_thresh = 80;              //threshold for deciding uwb turning
+            int uwb_detect_thresh = 1200;       //uwb starting to detect threshold (mm)   
+            double turn_thresh = 85;              //threshold for deciding uwb turning
             int safe_distance = 800;        //safe_distance from obstacle to lidar. Note that the lidar is 500mm from car edge
             int release_distance = 500;
             int emergency_distance = 750;
@@ -166,7 +166,7 @@ namespace lscm.project.followerv2
             //------------------------------start looping------------------------//
             while (_startFlag)
             {
-                if (System.Environment.TickCount - this.LastTick >= 1000)       //check uwb valid every time
+                if (System.Environment.TickCount - this.LastTick >= 400)       //check uwb valid every time
                 {
                     this.LastD0 = 0;
                     this.LastD1 = 0;
@@ -174,7 +174,7 @@ namespace lscm.project.followerv2
                 }
                 #region step 1 execute following once
                 Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);                //calculate the distance between the object and the middle of the uwb
-                while ((System.Environment.TickCount - this.LastTick >= 1000) || Ddistance < uwb_detect_thresh)
+                while ((System.Environment.TickCount - this.LastTick >= 400) || Ddistance < uwb_detect_thresh)
                 {
                     Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);
                     //follower_flag = false;
@@ -295,14 +295,14 @@ namespace lscm.project.followerv2
                 {
                     //Console.WriteLine("avoiding");
                     //////////////////////security adding////////////////////////////
-                    if (System.Environment.TickCount - this.LastTick >= 1000)       //check uwb valid every time
+                    if (System.Environment.TickCount - this.LastTick >= 400)       //check uwb valid every time
                     {
                         this.LastD0 = 0;
                         this.LastD1 = 0;
                         Console.WriteLine("No current uwb signal!");
                     }
                     Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);
-                    while ((System.Environment.TickCount - this.LastTick >= 1000) || Ddistance < uwb_detect_thresh)
+                    while ((System.Environment.TickCount - this.LastTick >= 400) || Ddistance < uwb_detect_thresh)
                     {
                         Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);
                         //follower_flag = false;
@@ -314,14 +314,14 @@ namespace lscm.project.followerv2
                     ///////////////////////////security ending////////////////////////
                     if ((obstacle_angleR > obstacle_angleL) && obstacle_angleL > 180)             //obstacle on the right, the angle may change from time to time
                     {
-                        obs_paramL = 0.09d;
-                        obs_paramR = 0.12d;
+                        obs_paramL = 0d;
+                        obs_paramR = 0d;
                         Console.Write(" turn left ");
                     }
                     else if ((obstacle_angleR > obstacle_angleL) && obstacle_angleL <= 180)        //obstacle on the left
                     {
-                        obs_paramL = 0.12d;
-                        obs_paramR = 0.09d;
+                        obs_paramL = 0d;
+                        obs_paramR = 0d;
                         Console.Write(" turn right ");
                     }
 
@@ -427,18 +427,18 @@ namespace lscm.project.followerv2
             Thread.Sleep(50);
         }
 
-        private void setspeedV2(double set_VL, double set_VR, ref double last_VL, ref double last_VR, double step_size = 1.6)
+        private void setspeedV2(double set_VL, double set_VR, ref double last_VL, ref double last_VR, double step_size = 2)
         {
             // set left wheel speed
             if (set_VL > last_VL)
             {
                 last_VL *= step_size;
-                if (last_VL >= set_VL) last_VL = set_VL;        
+                if (last_VL >= set_VL) last_VL = set_VL;
             }
-            else if(set_VL < last_VL)
+            else if (set_VL < last_VL)
             {
                 last_VL /= step_size;
-                if (last_VL <= set_VL) last_VL = set_VL;    
+                if (last_VL <= set_VL) last_VL = set_VL;
             }
 
             // set right wheel speed
@@ -453,14 +453,15 @@ namespace lscm.project.followerv2
                 if (last_VR <= set_VR) last_VR = set_VR;
             }
             //set stop threshold
-            if (set_VL * set_VR == 0) {
-                if (last_VL <= 3) last_VL = 0;
-                if (last_VR <= 3) last_VR = 0;
+            if (set_VL * set_VR == 0)
+            {
+                if (last_VL <= 5) last_VL = 0;
+                if (last_VR <= 5) last_VR = 0;
             }
 
             string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
             this.motorController.SendMessage(cmd);
-            Thread.Sleep(80);
+            Thread.Sleep(100);
         }
 
         //note: turning(1.2 0.8)  following(1.4 0.8)
