@@ -295,8 +295,14 @@ namespace lscm.project.followerv2
                 {
                     //Console.WriteLine("avoiding");
                     //////////////////////security adding////////////////////////////
+                    if (System.Environment.TickCount - this.LastTick >= 1000)       //check uwb valid every time
+                    {
+                        this.LastD0 = 0;
+                        this.LastD1 = 0;
+                        Console.WriteLine("No current uwb signal!");
+                    }
                     Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);
-                    while (Ddistance < uwb_detect_thresh)
+                    while ((System.Environment.TickCount - this.LastTick >= 1000) || Ddistance < uwb_detect_thresh)
                     {
                         Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);
                         //follower_flag = false;
