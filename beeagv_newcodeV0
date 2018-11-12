@@ -108,7 +108,7 @@ namespace lscm.project.followerv2
         //#endregion
 
         private bool _startFlag = false;
-   
+
 
         private void FollowerWorkHandler()
         {
@@ -120,7 +120,7 @@ namespace lscm.project.followerv2
             //step 3 make sure avoid the obstacle safely ?
 
 
-            
+
             //threshold configs
             int car_width = 450;               // the distance between D1 and D2, to be checked 
             int uwb_detect_thresh = 1050;       //uwb starting to detect threshold (mm)   
@@ -403,9 +403,9 @@ namespace lscm.project.followerv2
             double basic_speed = 40;
             double speed_param = 0;     //speed adjustment for both wheels
             double avoid_paramL = 0;     //speed adjustment for far obstacle avoid 
-            double avoid_paramR = 0;      
+            double avoid_paramR = 0;
             double slow_paramL = 0;      //speed adjustment for near obstacle slow
-            double slow_paramR = 0;      
+            double slow_paramR = 0;
             double uwb_paramL = 0;       //speed adjustment for follow uwb
             double uwb_paramR = 0;
             double final_paramL = 0;
@@ -419,7 +419,7 @@ namespace lscm.project.followerv2
             double uwb_detect_thresh = 1050;    //threshold for uwb stop (distance)
             double turn_thresh = 80;              //threshold for turning (D0 - D1)
             double side_thresh = 500;             //threshold for slowing down on both sides
-            double stop_thresh = 800;             //threshold for stop in front (same with safe_distance)
+            double stop_thresh = 700;             //threshold for stop in front (same with safe_distance)
             double slow_thresh = 1500;           //threshold for avoid in front (NOTICE: stop is prior than stop) 
             double avoid_thresh = 2000;           //threshold for avoid in front (NOTICE: stop is prior than stop) 
 
@@ -448,16 +448,25 @@ namespace lscm.project.followerv2
             double kal_K = 0.0d;        //0.4 when in front
             double kal_D0 = this.LastD0, kal_D1 = this.LastD1;
 
+            int initial_counter = 0;
             //waiting for lidar
             while (this.lidar.DataArray[0] != -1) ;     //make sure to get the lidar data
 
             //waiting for uwb
+            //while (initial_counter < 5)
+            //{
+            //    this.motorController.SendMessage("z 1 1\r\n");      //LED keep flashing
+            //    Thread.Sleep(1000);
+            //    this.motorController.SendMessage("z 0 0\r\n");
+            //    Thread.Sleep(1000);
+            //    initial_counter++;
+            //}
             while (this.LastD0 * this.LastD0 == 0)
             {
-                this.motorController.SendMessage("z 0 0\r\n");      //LED keep flashing
+                Console.WriteLine("waiting for uwb");
                 Thread.Sleep(1000);
             }
-            //------------------------start moving--------------------------//
+                //------------------------start moving--------------------------//
             while (_startFlag)
             {
                 //check uwb
@@ -483,7 +492,7 @@ namespace lscm.project.followerv2
                 //combine follow and avoid mode together
                 //READ LIDAR DATA
                 //deal with left side
-                for(int i = 90; i < 180; i++)
+                for (int i = 90; i < 180; i++)
                 {
                     if (this.lidar.DataArray[i] <= 0) continue;
                     if (i <= avoid_angL && this.lidar.DataArray[i] < side_thresh) side_counterL++;
@@ -492,28 +501,31 @@ namespace lscm.project.followerv2
                         if (this.lidar.DataArray[i] <= stop_thresh)
                         {
                             this.motorController.SendMessage("z 0 0\r\n");
+                            Console.WriteLine("lidarL stop");
+                            speed_param = -10;
                             break;
                         }
-                        if(this.lidar.DataArray[i] <= slow_thresh)
+                        if (this.lidar.DataArray[i] <= slow_thresh)
                         {
                             slow_counterL++;
                         }
-                        else if(this.lidar.DataArray[i] <= avoid_thresh && avoid_thresh <= Ddistance)
+                        else if (this.lidar.DataArray[i] <= avoid_thresh && this.lidar.DataArray[i] <= (Ddistance+300))     //to be dicided
                         {
                             avoid_counterL++;
                         }
-                    } 
+                    }
                 }
                 //deal with right side
                 for (int i = 180; i <= 270; i++)
                 {
                     if (this.lidar.DataArray[i] <= 0) continue;
-                    if (i <= avoid_angR && this.lidar.DataArray[i] < side_thresh) side_counterR++;
-                    if (i > avoid_angR && i <= 270)
+                    if (i > avoid_angR && this.lidar.DataArray[i] < side_thresh) side_counterR++;
+                    if (i <= avoid_angR && i >= 180)
                     {
                         if (this.lidar.DataArray[i] <= stop_thresh)
                         {
                             this.motorController.SendMessage("z 0 0\r\n");      //set speed to zero
+                            Console.WriteLine("lidarR stop");
                             speed_param = -10;
                             break;
                         }
@@ -559,20 +571,20 @@ namespace lscm.project.followerv2
                     uwb_paramL = -0.2;
                     uwb_paramR = 0.2;
                 }
-                speed_param += Ddistance / 5000;        //1000 -- 0.2
+                speed_param += Ddistance / 10000;        //1000 -- 0.2
 
 
-                if (slow_counterL >= DECIDER_NUM || slow_counterR >= DECIDER_NUM)
+                if (side_counterL >= DECIDER_NUM || side_counterR >= DECIDER_NUM)       //if obstacles exist on both sides, slow down
                 {
-                    speed_param = -0.5;                    
-                } 
-                if(slow_counterL >= DECIDER_NUM)
+                    speed_param = -0.3;
+                }
+                if (slow_counterL >= DECIDER_NUM)
                 {
                     avoid_counterL = 0;
-                    slow_paramL = (-0.03) * slow_counterL;
-                    slow_paramR = -0.8;
-                } 
-                if(avoid_counterL >= DECIDER_NUM)
+                    slow_paramL = (-0.025) * slow_counterL;
+                    slow_paramR = -0.6;
+                }
+                if (avoid_counterL >= DECIDER_NUM)
                 {
                     avoid_paramL = 0.02 * avoid_counterL;
                     avoid_paramR = (-0.01) * avoid_counterL;
@@ -581,8 +593,8 @@ namespace lscm.project.followerv2
                 if (slow_counterR >= DECIDER_NUM)
                 {
                     avoid_counterR = 0;
-                    slow_paramR = (-0.03) * slow_counterR;
-                    slow_paramL = -0.8;
+                    slow_paramR = (-0.025) * slow_counterR;
+                    slow_paramL = -0.6;
                 }
                 if (avoid_counterL >= DECIDER_NUM)
                 {
@@ -590,14 +602,29 @@ namespace lscm.project.followerv2
                     avoid_paramL = (-0.01) * avoid_counterR;
                 }
 
+                
                 final_paramL = 1 + speed_param + avoid_paramL + slow_paramL + uwb_paramL;
                 final_paramR = 1 + speed_param + avoid_paramR + slow_paramR + uwb_paramR;
                 if (final_paramL < 0) final_paramL = 0;
                 if (final_paramR < 0) final_paramR = 0;
-                //last_VL = basic_speed * final_paramL;
-                //last_VR = basic_speed * final_paramR;
+                if (side_counterL >= DECIDER_NUM && final_paramL < final_paramR)
+                {
+                    final_paramR = final_paramL;
+                }
+                if (side_counterR >= DECIDER_NUM && final_paramR < final_paramL)
+                {
+                    final_paramL = final_paramR;
+                }
+                //Console.Write("side L : " + side_counterL);
+                //Console.WriteLine(" and side R : " + side_counterR);
+                //Console.Write("avoid L : " + avoid_counterL);
+                //Console.WriteLine(" and avoid R : " + avoid_counterR);
+                //Console.Write("slow L : " + slow_counterL);
+                //Console.WriteLine(" and slow R : " + slow_counterR);
                 Console.Write("L : " + basic_speed * final_paramL);
                 Console.WriteLine(" and R : " + basic_speed * final_paramR);
+                string cmd = string.Format("z {0:0} {1:0}\r\n", basic_speed * final_paramL, basic_speed * final_paramR);      //speed param is declared but not in use
+                this.motorController.SendMessage(cmd);
                 //setspeedV2(basic_speed * final_paramL, basic_speed * final_paramR, ref last_VL, ref last_VR);
 
                 speed_param = 0;     //speed adjustment for both wheels
@@ -609,6 +636,14 @@ namespace lscm.project.followerv2
                 uwb_paramR = 0;
                 final_paramL = 0;
                 final_paramR = 0;
+
+                side_counterL = 0;
+                side_counterR = 0;
+                avoid_counterL = 0;
+                avoid_counterR = 0;
+                slow_counterL = 0;
+                slow_counterR = 0;
+
                 Thread.Sleep(100);
 
             }
@@ -660,12 +695,12 @@ namespace lscm.project.followerv2
             if (set_VL > last_VL)
             {
                 last_VL *= step_size;
-                if (last_VL >= set_VL) last_VL = set_VL;        
+                if (last_VL >= set_VL) last_VL = set_VL;
             }
-            else if(set_VL < last_VL)
+            else if (set_VL < last_VL)
             {
                 last_VL /= step_size;
-                if (last_VL <= set_VL) last_VL = set_VL;    
+                if (last_VL <= set_VL) last_VL = set_VL;
             }
 
             // set right wheel speed
@@ -680,7 +715,8 @@ namespace lscm.project.followerv2
                 if (last_VR <= set_VR) last_VR = set_VR;
             }
             //set stop threshold
-            if (set_VL * set_VR == 0) {
+            if (set_VL * set_VR == 0)
+            {
                 if (last_VL <= 3) last_VL = 0;
                 if (last_VR <= 3) last_VR = 0;
             }
@@ -697,7 +733,8 @@ namespace lscm.project.followerv2
             double Dmax = 0;
             double measurment_err = 30;
             bool flag = false;
-            for (int i = 60; i < 240; i++) {
+            for (int i = 60; i < 240; i++)
+            {
                 Dmax = this.lidar.DataArray[i] * Math.Sin(delta_fi * Math.PI / 180) / Math.Sin((lambda - delta_fi) * Math.PI / 180) + 3 * measurment_err;
                 if (Math.Abs(this.lidar.DataArray[i + 1] - this.lidar.DataArray[i]) > Dmax) flag = true;        // I made the calculation simpler
             }
@@ -843,8 +880,8 @@ namespace lscm.project.followerv2
             try
             {
                 this._startFlag = true;
-                var wThread = new Thread(new ThreadStart(FollowerWorkHandler))
-                //var wThread = new Thread(new ThreadStart(FollowerWorkHandler2))
+                //var wThread = new Thread(new ThreadStart(FollowerWorkHandler))
+                var wThread = new Thread(new ThreadStart(FollowerWorkHandler2))
                 {
                     IsBackground = true
                 };
