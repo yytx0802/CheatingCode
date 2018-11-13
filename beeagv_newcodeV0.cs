@@ -498,7 +498,7 @@ namespace lscm.project.followerv2
                     if (i <= avoid_angL && this.lidar.DataArray[i] < side_thresh) side_counterL++;
                     if (i > avoid_angL && i <= 180)
                     {
-                        if (this.lidar.DataArray[i] <= stop_thresh)
+                        if (this.lidar.DataArray[i] <= stop_thresh && this.lidar.DataArray[i + 1] <= stop_thresh )
                         {
                             this.motorController.SendMessage("z 0 0\r\n");
                             Console.WriteLine("lidarL stop");
@@ -522,7 +522,7 @@ namespace lscm.project.followerv2
                     if (i > avoid_angR && this.lidar.DataArray[i] < side_thresh) side_counterR++;
                     if (i <= avoid_angR && i >= 180)
                     {
-                        if (this.lidar.DataArray[i] <= stop_thresh)
+                        if (this.lidar.DataArray[i] <= stop_thresh && this.lidar.DataArray[i + 1] <= stop_thresh)
                         {
                             this.motorController.SendMessage("z 0 0\r\n");      //set speed to zero
                             Console.WriteLine("lidarR stop");
@@ -557,8 +557,8 @@ namespace lscm.project.followerv2
                 }
                 if ((kal_D0 - kal_D1) / turn_thresh > 3)
                 {
-                    uwb_paramL = 0.2;
-                    uwb_paramR = -0.2;
+                    uwb_paramL = 0.5;
+                    uwb_paramR = -0.4;
                 }
 
                 if ((kal_D0 - kal_D1) / turn_thresh < -1)
@@ -568,8 +568,8 @@ namespace lscm.project.followerv2
                 }
                 if ((kal_D0 - kal_D1) / turn_thresh < -3)
                 {
-                    uwb_paramL = -0.2;
-                    uwb_paramR = 0.2;
+                    uwb_paramL = -0.4;
+                    uwb_paramR = 0.5;
                 }
                 speed_param += Ddistance / 10000;        //1000 -- 0.2
 
