@@ -435,7 +435,7 @@ namespace lscm.project.followerv2
             double Ddistance = 0;               //initial distance from uwb to the mid of D0 D1. 
             double emergency_distance = 750;    //emergency stop distance for uwb
             double D_offset = 20;              //a small offset  
-            double uwb_T0 = 0;                  
+            double uwb_T0 = 0;
             double uwb_T1 = 0;
             double uwb_T2 = 0;
             //double safe_distance = 800;        //safe_distance from obstacle to lidar. Note that the lidar is 500mm from car edge
@@ -468,7 +468,7 @@ namespace lscm.project.followerv2
                 Console.WriteLine("waiting for uwb");
                 Thread.Sleep(1000);
             }
-                //------------------------start moving--------------------------//
+            //------------------------start moving--------------------------//
             while (_startFlag)
             {
                 //check uwb
@@ -488,6 +488,9 @@ namespace lscm.project.followerv2
                     //Console.Write(Ddistance);
                     Console.WriteLine("Ddistance stop");
                     Thread.Sleep(500);
+                    uwb_T0 = this.LastD0 - this.LastD1;            //add a 0.5s * 2 delay for tracking people
+                    uwb_T1 = this.LastD0 - this.LastD1;
+                    uwb_T2 = this.LastD0 - this.LastD1;
                     kal_D0 = this.LastD0;
                     kal_D1 = this.LastD1;
                 }
@@ -500,7 +503,7 @@ namespace lscm.project.followerv2
                     if (i <= avoid_angL && this.lidar.DataArray[i] < side_thresh) side_counterL++;
                     if (i > avoid_angL && i <= 180)
                     {
-                        if (this.lidar.DataArray[i] <= stop_thresh && this.lidar.DataArray[i + 1] <= stop_thresh )
+                        if (this.lidar.DataArray[i] <= stop_thresh && this.lidar.DataArray[i + 1] <= stop_thresh)
                         {
                             this.motorController.SendMessage("z 0 0\r\n");
                             Console.WriteLine("lidarL stop");
@@ -511,7 +514,7 @@ namespace lscm.project.followerv2
                         {
                             slow_counterL++;
                         }
-                        else if (this.lidar.DataArray[i] <= avoid_thresh && this.lidar.DataArray[i] <= (Ddistance+300))     //to be dicided
+                        else if (this.lidar.DataArray[i] <= avoid_thresh && this.lidar.DataArray[i] <= (Ddistance + 300))     //to be dicided
                         {
                             avoid_counterL++;
                         }
@@ -551,7 +554,7 @@ namespace lscm.project.followerv2
                 kal_D0 = kal_D0 + kal_K * (this.LastD0 - kal_D0);
                 kal_D1 = kal_D1 + kal_K * (this.LastD1 - kal_D1);
                 kal_P = (1 - kal_K) * kal_P + kal_Q;
-                
+
                 int tick_now = System.Environment.TickCount;
                 if ((System.Environment.TickCount - tick_now) > 500)
                 {
@@ -559,24 +562,24 @@ namespace lscm.project.followerv2
                     uwb_T1 = uwb_T2;
                     uwb_T2 = kal_D0 - kal_D1;
                 }
-                
-                if ((kal_D0 - kal_D1) / turn_thresh > 1)
+
+                if ((uwb_T0) / turn_thresh > 1)
                 {
                     uwb_paramL = 0.1;
                     uwb_paramR = -0.1;
                 }
-                if ((kal_D0 - kal_D1) / turn_thresh > 3)
+                if ((uwb_T0) / turn_thresh > 3)
                 {
                     uwb_paramL = 0.5;
                     uwb_paramR = -0.4;
                 }
 
-                if ((kal_D0 - kal_D1) / turn_thresh < -1)
+                if ((uwb_T0) / turn_thresh < -1)
                 {
                     uwb_paramL = -0.1;
                     uwb_paramR = 0.1;
                 }
-                if ((kal_D0 - kal_D1) / turn_thresh < -3)
+                if ((uwb_T0) / turn_thresh < -3)
                 {
                     uwb_paramL = -0.4;
                     uwb_paramR = 0.5;
@@ -612,7 +615,7 @@ namespace lscm.project.followerv2
                     avoid_paramL = (-0.01) * avoid_counterR;
                 }
 
-                
+
                 final_paramL = 1 + speed_param + avoid_paramL + slow_paramL + uwb_paramL;
                 final_paramR = 1 + speed_param + avoid_paramR + slow_paramR + uwb_paramR;
                 if (final_paramL < 0) final_paramL = 0;
