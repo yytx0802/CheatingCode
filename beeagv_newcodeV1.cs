@@ -420,7 +420,7 @@ namespace lscm.project.followerv2
             double turn_thresh = 80;              //threshold for turning (D0 - D1)
             double side_thresh = 500;             //threshold for slowing down on both sides
             double stop_thresh = 700;             //threshold for stop in front (same with safe_distance)
-            double slow_thresh = 1500;           //threshold for avoid in front (NOTICE: stop is prior than stop) 
+            double slow_thresh = 1300;           //threshold for avoid in front (NOTICE: stop is prior than stop) 
             double avoid_thresh = 2000;           //threshold for avoid in front (NOTICE: stop is prior than stop) 
 
             //lidar data points counter     (counters will affect car behaviours)
@@ -451,6 +451,7 @@ namespace lscm.project.followerv2
             double kal_D0 = this.LastD0, kal_D1 = this.LastD1;
 
             int initial_counter = 0;
+            int tick_now = System.Environment.TickCount;
             //waiting for lidar
             while (this.lidar.DataArray[0] != -1) ;     //make sure to get the lidar data
 
@@ -499,7 +500,7 @@ namespace lscm.project.followerv2
                 //deal with left side
                 for (int i = 90; i < 180; i++)
                 {
-                    if (this.lidar.DataArray[i] <= 0) continue;
+                    if (this.lidar.DataArray[i] <= 0 || this.lidar.DataArray[i+1] <= 0) continue;
                     if (i <= avoid_angL && this.lidar.DataArray[i] < side_thresh) side_counterL++;
                     if (i > avoid_angL && i <= 180)
                     {
@@ -523,7 +524,7 @@ namespace lscm.project.followerv2
                 //deal with right side
                 for (int i = 180; i <= 270; i++)
                 {
-                    if (this.lidar.DataArray[i] <= 0) continue;
+                    if (this.lidar.DataArray[i] <= 0 || this.lidar.DataArray[i + 1] <= 0) continue;
                     if (i > avoid_angR && this.lidar.DataArray[i] < side_thresh) side_counterR++;
                     if (i <= avoid_angR && i >= 180)
                     {
@@ -555,18 +556,19 @@ namespace lscm.project.followerv2
                 kal_D1 = kal_D1 + kal_K * (this.LastD1 - kal_D1);
                 kal_P = (1 - kal_K) * kal_P + kal_Q;
 
-                int tick_now = System.Environment.TickCount;
+
                 if ((System.Environment.TickCount - tick_now) > 500)
                 {
                     uwb_T0 = uwb_T1;            //add a 0.5s * 2 delay for tracking people
                     uwb_T1 = uwb_T2;
                     uwb_T2 = kal_D0 - kal_D1;
+                    tick_now = System.Environment.TickCount;
                 }
 
                 if ((uwb_T0) / turn_thresh > 1)
                 {
-                    uwb_paramL = 0.1;
-                    uwb_paramR = -0.1;
+                    uwb_paramL = 0.2;
+                    uwb_paramR = -0.2;
                 }
                 if ((uwb_T0) / turn_thresh > 3)
                 {
@@ -576,8 +578,8 @@ namespace lscm.project.followerv2
 
                 if ((uwb_T0) / turn_thresh < -1)
                 {
-                    uwb_paramL = -0.1;
-                    uwb_paramR = 0.1;
+                    uwb_paramL = -0.2;
+                    uwb_paramR = 0.2;
                 }
                 if ((uwb_T0) / turn_thresh < -3)
                 {
@@ -594,8 +596,16 @@ namespace lscm.project.followerv2
                 if (slow_counterL >= DECIDER_NUM)
                 {
                     avoid_counterL = 0;
-                    slow_paramL = (-0.025) * slow_counterL;
-                    slow_paramR = -0.6;
+                    if (slow_counterR == 0)
+                    {
+                        slow_paramL = (-0.02) * slow_counterL;
+                        slow_paramR = -0.4;
+                    }
+                    else
+                    {
+                        slow_paramL = -0.3;
+                        slow_paramR = -0.3;
+                    }
                 }
                 if (avoid_counterL >= DECIDER_NUM)
                 {
@@ -603,11 +613,19 @@ namespace lscm.project.followerv2
                     avoid_paramR = (-0.01) * avoid_counterL;
                 }
 
-                if (slow_counterR >= DECIDER_NUM)
+                if (slow_counterR >= DECIDER_NUM && slow_counterL == 0)
                 {
                     avoid_counterR = 0;
-                    slow_paramR = (-0.025) * slow_counterR;
-                    slow_paramL = -0.6;
+                    if (slow_counterL == 0)
+                    {
+                        slow_paramR = (-0.02) * slow_counterR;
+                        slow_paramL = -0.4;
+                    }
+                    else
+                    {
+                        slow_paramL = -0.3;
+                        slow_paramR = -0.3;
+                    }
                 }
                 if (avoid_counterL >= DECIDER_NUM)
                 {
@@ -634,6 +652,8 @@ namespace lscm.project.followerv2
                 //Console.WriteLine(" and avoid R : " + avoid_counterR);
                 //Console.Write("slow L : " + slow_counterL);
                 //Console.WriteLine(" and slow R : " + slow_counterR);
+                Console.Write("uwbL : " + uwb_paramL);
+                Console.WriteLine(" and uwbR : " + uwb_paramR);
                 Console.Write("L : " + basic_speed * final_paramL);
                 Console.WriteLine(" and R : " + basic_speed * final_paramR);
                 string cmd = string.Format("z {0:0} {1:0}\r\n", basic_speed * final_paramL, basic_speed * final_paramR);      //speed param is declared but not in use
