@@ -435,7 +435,9 @@ namespace lscm.project.followerv2
             double Ddistance = 0;               //initial distance from uwb to the mid of D0 D1. 
             double emergency_distance = 750;    //emergency stop distance for uwb
             double D_offset = 20;              //a small offset  
-
+            double uwb_T0 = 0;                  
+            double uwb_T1 = 0;
+            double uwb_T2 = 0;
             //double safe_distance = 800;        //safe_distance from obstacle to lidar. Note that the lidar is 500mm from car edge
             //int release_distance = 500;  
 
@@ -549,7 +551,15 @@ namespace lscm.project.followerv2
                 kal_D0 = kal_D0 + kal_K * (this.LastD0 - kal_D0);
                 kal_D1 = kal_D1 + kal_K * (this.LastD1 - kal_D1);
                 kal_P = (1 - kal_K) * kal_P + kal_Q;
-
+                
+                int tick_now = System.Environment.TickCount;
+                if ((System.Environment.TickCount - tick_now) > 500)
+                {
+                    uwb_T0 = uwb_T1;            //add a 0.5s * 2 delay for tracking people
+                    uwb_T1 = uwb_T2;
+                    uwb_T2 = kal_D0 - kal_D1;
+                }
+                
                 if ((kal_D0 - kal_D1) / turn_thresh > 1)
                 {
                     uwb_paramL = 0.1;
