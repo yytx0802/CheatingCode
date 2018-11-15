@@ -451,6 +451,8 @@ namespace lscm.project.followerv2
             double kal_D0 = this.LastD0, kal_D1 = this.LastD1;
 
             int initial_counter = 0;
+            int back_numberL = 0;
+            int back_numberR = 0;
             int tick_now = System.Environment.TickCount;
             //waiting for lidar
             while (this.lidar.DataArray[0] != -1) ;     //make sure to get the lidar data
@@ -509,6 +511,7 @@ namespace lscm.project.followerv2
                             this.motorController.SendMessage("z 0 0\r\n");
                             Console.WriteLine("lidarL stop");
                             speed_param = -10;
+                            back_numberL++;
                             break;
                         }
                         if (this.lidar.DataArray[i] <= slow_thresh)
@@ -533,6 +536,7 @@ namespace lscm.project.followerv2
                             this.motorController.SendMessage("z 0 0\r\n");      //set speed to zero
                             Console.WriteLine("lidarR stop");
                             speed_param = -10;
+                            back_numberR++;
                             break;
                         }
                         if (this.lidar.DataArray[i] <= slow_thresh)
@@ -546,7 +550,19 @@ namespace lscm.project.followerv2
                     }
                 }
 
-
+                //RELIFE ACTION
+                if(back_numberL > 100 && slow_counterR == 0)
+                {
+                    this.motorController.SendMessage("z -20 -20");
+                    Thread.Sleep(2000);
+                    back_numberL = 0;
+                }
+                else if (back_numberR > 100 && slow_counterL == 0)
+                {
+                    this.motorController.SendMessage("z -20 -20");
+                    Thread.Sleep(2000);
+                    back_numberR = 0;
+                }
                 //DICISION MAKING
                 Ddistance = cal_distance(this.LastD0, this.LastD1, D_offset);
                 if ((System.Environment.TickCount - this.LastTick >= UWB_TIMEOUT) || Ddistance < uwb_detect_thresh) continue;
@@ -601,7 +617,7 @@ namespace lscm.project.followerv2
                     if (slow_counterR == 0)
                     {
                         slow_paramL = (-0.02) * slow_counterL;
-                        slow_paramR = -0.4;
+                        slow_paramR = -0.3;
                     }
                     else
                     {
@@ -621,7 +637,7 @@ namespace lscm.project.followerv2
                     if (slow_counterL == 0)
                     {
                         slow_paramR = (-0.02) * slow_counterR;
-                        slow_paramL = -0.4;
+                        slow_paramL = -0.3;
                     }
                     else
                     {
