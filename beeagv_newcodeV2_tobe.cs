@@ -551,16 +551,16 @@ namespace lscm.project.followerv2
                 }
 
                 //RELIFE ACTION
-                if(back_numberL > 100 && slow_counterR == 0)
+                if(back_numberL > 40 && slow_counterR == 0)
                 {
-                    this.motorController.SendMessage("z -20 -20");
-                    Thread.Sleep(2000);
+                    this.motorController.SendMessage("z -20 -20\r\n");
+                    Thread.Sleep(1000);
                     back_numberL = 0;
                 }
-                else if (back_numberR > 100 && slow_counterL == 0)
+                else if (back_numberR > 40 && slow_counterL == 0)
                 {
-                    this.motorController.SendMessage("z -20 -20");
-                    Thread.Sleep(2000);
+                    this.motorController.SendMessage("z -20 -20\r\n");
+                    Thread.Sleep(1000);
                     back_numberR = 0;
                 }
                 //DICISION MAKING
@@ -699,7 +699,7 @@ namespace lscm.project.followerv2
 
             }
         }
-        private int cal_distance(double d1, double d2, double D_offset = 50)
+        private int cal_distance(double d1, double d2, double D_offset = 50)        //won't affect d0 -d1
         {
             if (d1 * d2 == 0) return 0;
             return (int)(Math.Sqrt((0.5 * (this.LastD0 * this.LastD0 + this.LastD1 * this.LastD1 - 0.5 * 450 * 450))) + D_offset);
@@ -708,11 +708,10 @@ namespace lscm.project.followerv2
         private void setspeed(double set_VL, double set_VR, ref double last_VL, ref double last_VR)
         {
             //control the left wheel speed and right speed seperatedly
-            double step_size = 4d;
+            double step_size = 6d;
             //set acc depending on different velocities
-            if (last_VL >= 20) step_size = 6d;
+            if ((set_VL >= (last_VL + 20)) || (set_VR >= (last_VR + 20))) step_size = 10d;
             //else if (last_VL >= 20) step_size = 4;
-
             if ((set_VL - last_VL) >= 0)
             {
                 if ((last_VL += step_size) > set_VL) last_VL = set_VL;
@@ -733,10 +732,6 @@ namespace lscm.project.followerv2
 
             string cmd = string.Format("z {0:0} {1:0}\r\n", last_VL, last_VR);      //speed param is declared but not in use
             this.motorController.SendMessage(cmd);
-            //Console.Write("set speedL is ");
-            //Console.WriteLine(set_VL);
-            //Console.Write("last speedL is ");
-            //Console.WriteLine(last_VL);
             Thread.Sleep(50);
         }
         #endregion
