@@ -502,7 +502,7 @@ namespace lscm.project.followerv2
                 //deal with left side
                 for (int i = 90; i < 180; i++)
                 {
-                    if (this.lidar.DataArray[i] <= 0 || this.lidar.DataArray[i+1] <= 0) continue;
+                    if (this.lidar.DataArray[i] <= 0 || this.lidar.DataArray[i + 1] <= 0) continue;
                     if (i <= avoid_angL && this.lidar.DataArray[i] < side_thresh) side_counterL++;
                     if (i > avoid_angL && i <= 180)
                     {
@@ -520,7 +520,10 @@ namespace lscm.project.followerv2
                         {
                             slow_counterL++;
                         }
-                        else if (this.lidar.DataArray[i] <= avoid_thresh && this.lidar.DataArray[i] <= (Ddistance + 300))     //to be dicided
+                        //theoretically, if people stands here, the dataArray should be smaller than Ddistance 
+                        //this is for judging not people obstacles and avoid it.
+                        else if (this.lidar.DataArray[i] <= avoid_thresh && kal_D0 < kal_D1 && this.lidar.DataArray[i] <= Ddistance)    
+                        //it takes effects ONLY when assuming people is on right-side, which may cause avoid_counterL becomes smaller
                         {
                             avoid_counterL++;
                         }
@@ -547,7 +550,8 @@ namespace lscm.project.followerv2
                         {
                             slow_counterR++;
                         }
-                        else if (this.lidar.DataArray[i] <= avoid_thresh && avoid_thresh <= Ddistance)
+                        //theoretically, the dataarray should be smaller than Ddistance 
+                        else if (this.lidar.DataArray[i] <= avoid_thresh && kal_D0 > kal_D1 && this.lidar.DataArray[i] <= Ddistance)
                         {
                             avoid_counterR++;
                         }
@@ -555,7 +559,7 @@ namespace lscm.project.followerv2
                 }
 
                 //RELIFE ACTION
-                if(back_numberL > 40 && slow_counterR == 0)
+                if (back_numberL > 40 && slow_counterR == 0)
                 {
                     this.motorController.SendMessage("z -20 -20\r\n");
                     last_VL = -20;
